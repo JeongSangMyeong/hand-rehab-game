@@ -1,16 +1,21 @@
-# hand_rehab_game
+# Flutter 벽돌 깨기 게임
 
-A new Flutter project.
+이 프로젝트는 Flutter를 이용해 만든 간단한 벽돌 깨기 게임입니다. 사용자는 바를 조작해 공을 튕기며 벽돌을 깨트릴 수 있습니다. 남은 벽돌의 수와 게임 진행 시간을 확인할 수 있습니다.
 
-## Getting Started
+## 주요 기능
 
-This project is a starting point for a Flutter application.
+- **설정 가능**:  
+  - 게임 시작 전에 **공의 크기**, **공의 속도**, **바의 크기**를 설정할 수 있습니다.
+  
+- **랜덤 벽돌 생성**:  
+  - 게임 시작 시 **15개에서 30개의 벽돌**이 랜덤으로 생성됩니다.
 
-A few resources to get you started if this is your first Flutter project:
+- **게임 정보**:  
+  - 남은 **벽돌 수**와 **게임 진행 시간**이 화면에 표시됩니다.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## 게임 방법
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+1. 게임 시작 전 설정 화면에서 공 크기, 속도, 바 크기를 조절합니다.
+2. 바를 조작해 공을 튕기고, 모든 벽돌을 깨트립니다.
+3. 모든 벽돌을 없애면 랜덤 벽돌이 다시 생성됩니다.
+4. 공을 놓칠 시 소요 시간과 부순 벽돌 수를 종합하여 팝업으로 보여줍니다.
