@@ -3,7 +3,7 @@ import 'dart:async';
 
 import 'brick_breaker_game_screen.dart';
 
-class GameSettingsScreen extends StatefulWidget {
+class BrickBreakerGameSettingScreen extends StatefulWidget {
   final double initialRoll;
   final double initialPitch;
   final double initialYaw;
@@ -14,7 +14,7 @@ class GameSettingsScreen extends StatefulWidget {
   final double initialPressure2;
   final Stream<List<double>> bluetoothDataStream;
 
-  const GameSettingsScreen({
+  const BrickBreakerGameSettingScreen({
     super.key,
     required this.initialRoll,
     required this.initialPitch,
@@ -31,7 +31,7 @@ class GameSettingsScreen extends StatefulWidget {
   _GameSettingsScreenState createState() => _GameSettingsScreenState();
 }
 
-class _GameSettingsScreenState extends State<GameSettingsScreen> {
+class _GameSettingsScreenState extends State<BrickBreakerGameSettingScreen> {
   // 초기 값 할당
   double roll = 0.0, pitch = 0.0, yaw = 0.0;
   double accx = 0.0, accy = 0.0, accz = 0.0;
@@ -85,7 +85,7 @@ class _GameSettingsScreenState extends State<GameSettingsScreen> {
     double screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
-      appBar: AppBar(title: const Text("게임 설정")),
+      appBar: AppBar(title: const Text("벽돌 깨기 게임 설정")),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(

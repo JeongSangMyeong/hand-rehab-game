@@ -1,22 +1,23 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-
 import 'brick_breaker_game_setting_screen.dart';
+import 'galaga_game_setting_screen.dart'; // 갤러그 게임 설정 화면 추가
 
 class GameListScreen extends StatefulWidget {
   final Stream<List<double>> bluetoothDataStream;
 
-  const GameListScreen(
-      {super.key,
-      required this.bluetoothDataStream,
-      required double initialRoll,
-      required double initialPitch,
-      required double initialYaw,
-      required double initialAccx,
-      required double initialAccy,
-      required double initialAccz,
-      required double initialPressure1,
-      required double initialPressure2});
+  const GameListScreen({
+    super.key,
+    required this.bluetoothDataStream,
+    required double initialRoll,
+    required double initialPitch,
+    required double initialYaw,
+    required double initialAccx,
+    required double initialAccy,
+    required double initialAccz,
+    required double initialPressure1,
+    required double initialPressure2,
+  });
 
   @override
   _GameListScreenState createState() => _GameListScreenState();
@@ -88,8 +89,8 @@ class _GameListScreenState extends State<GameListScreen> {
                     Text("AccX(X축 가속도 값 - 좌,우): ${accx.toStringAsFixed(2)}"),
                     Text("AccY(Y축 가속도 값 - 앞,뒤): ${accy.toStringAsFixed(2)}"),
                     Text("AccZ(Z축 가속도 값 - 위,아래): ${accz.toStringAsFixed(2)}"),
-                    Text("Pressure1(안쪽 압력): ${pressure1.toStringAsFixed(2)}"),
-                    Text("Pressure2(바깥쪽 압력): ${pressure2.toStringAsFixed(2)}"),
+                    Text("Pressure1(바깥쪽 압력): ${pressure1.toStringAsFixed(2)}"),
+                    Text("Pressure2(안쪽 압력): ${pressure2.toStringAsFixed(2)}"),
                   ],
                 ),
               ),
@@ -102,8 +103,36 @@ class _GameListScreenState extends State<GameListScreen> {
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               children: [
-                _buildGameCard(context, "1. 벽돌 깨기 게임"),
-                // 다른 게임을 추가할 수 있는 공간
+                _buildGameCard(
+                  context,
+                  "1. 벽돌 깨기 게임",
+                  BrickBreakerGameSettingScreen(
+                    initialRoll: roll,
+                    initialPitch: pitch,
+                    initialYaw: yaw,
+                    initialAccx: accx,
+                    initialAccy: accy,
+                    initialAccz: accz,
+                    initialPressure1: pressure1,
+                    initialPressure2: pressure2,
+                    bluetoothDataStream: widget.bluetoothDataStream,
+                  ),
+                ),
+                _buildGameCard(
+                  context,
+                  "2. 갤러그 게임",
+                  GalagaGameSettingScreen(
+                    initialRoll: roll,
+                    initialPitch: pitch,
+                    initialYaw: yaw,
+                    initialAccx: accx,
+                    initialAccy: accy,
+                    initialAccz: accz,
+                    initialPressure1: pressure1,
+                    initialPressure2: pressure2,
+                    bluetoothDataStream: widget.bluetoothDataStream,
+                  ),
+                ),
               ],
             ),
           ),
@@ -112,25 +141,14 @@ class _GameListScreenState extends State<GameListScreen> {
     );
   }
 
-  Widget _buildGameCard(BuildContext context, String gameTitle) {
+  Widget _buildGameCard(
+      BuildContext context, String gameTitle, Widget nextScreen) {
     return GestureDetector(
       onTap: () {
-        // 게임을 선택하면 해당 게임의 설정 화면으로 이동
+        // 각 게임 설정 화면으로 이동
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => GameSettingsScreen(
-              initialRoll: roll,
-              initialPitch: pitch,
-              initialYaw: yaw,
-              initialAccx: accx,
-              initialAccy: accy,
-              initialAccz: accz,
-              initialPressure1: pressure1,
-              initialPressure2: pressure2,
-              bluetoothDataStream: widget.bluetoothDataStream,
-            ),
-          ),
+          MaterialPageRoute(builder: (context) => nextScreen),
         );
       },
       child: Card(

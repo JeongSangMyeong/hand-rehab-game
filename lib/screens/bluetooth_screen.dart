@@ -79,11 +79,17 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
 
         connection.input!.listen((Uint8List data) {
           String incomingData = String.fromCharCodes(data);
-          log.info('Raw incoming data: $incomingData'); // 데이터 확인용
+
+          // 로그 추가: 데이터 수신 로그
+          log.info('Received data: $incomingData'); // Raw 데이터 로그
 
           // 데이터를 파싱
           List<String> parsedNumbers = _parseNumbers(incomingData);
+
           if (parsedNumbers.isNotEmpty && parsedNumbers.length >= 6) {
+            // 로그 추가: 파싱된 데이터 로그
+            log.info('Parsed data: $parsedNumbers');
+
             roll = double.tryParse(parsedNumbers[0]) ?? 0.0;
             pitch = double.tryParse(parsedNumbers[1]) ?? 0.0;
             yaw = double.tryParse(parsedNumbers[2]) ?? 0.0;
@@ -91,15 +97,14 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
             accy = double.tryParse(parsedNumbers[4]) ?? 0.0;
             accz = double.tryParse(parsedNumbers[5]) ?? 0.0;
 
-            // 압력 센서 값 처리
-            if (parsedNumbers.length == 7) {
-              pressure1 = 0.0;
-              pressure2 = double.tryParse(parsedNumbers[6]) ?? 0.0;
-            } else if (parsedNumbers.length >= 8) {
+            if (parsedNumbers.length > 6) {
               pressure1 = double.tryParse(parsedNumbers[6]) ?? 0.0;
+            }
+            if (parsedNumbers.length > 7) {
               pressure2 = double.tryParse(parsedNumbers[7]) ?? 0.0;
             }
 
+            // 로그 추가: 각 센서 값 로그
             log.info('Parsed values - Roll: $roll, Pitch: $pitch, Yaw: $yaw, '
                 'AccX: $accx, AccY: $accy, AccZ: $accz, '
                 'Pressure1: $pressure1, Pressure2: $pressure2');
@@ -108,6 +113,7 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
             _bluetoothDataController.add(
                 [roll, pitch, yaw, accx, accy, accz, pressure1, pressure2]);
           } else {
+            // 로그 추가: 데이터 파싱 실패 시 경고 로그
             log.warning(
                 'Parsed numbers are less than expected: $parsedNumbers');
           }

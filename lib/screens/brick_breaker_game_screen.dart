@@ -17,26 +17,28 @@ class BrickBreakerGameScreen extends StatefulWidget {
   });
 
   @override
-  _GameScreenState createState() => _GameScreenState();
+  _BrickBreakerGameScreenState createState() => _BrickBreakerGameScreenState();
 }
 
-class _GameScreenState extends State<BrickBreakerGameScreen> {
+class _BrickBreakerGameScreenState extends State<BrickBreakerGameScreen> {
   double ballX = 0.0;
   double ballY = 0.0;
   double ballSpeedX = 0.0;
   double ballSpeedY = 0.0;
   double barX = 0.0;
+  bool isBallLaunched = false; // 공이 발사되었는지 여부
   Timer? _timer;
   late StreamSubscription<List<double>> _bluetoothSubscription;
 
   List<Rect> blocks = [];
   int totalBlocksDestroyed = 0;
   Stopwatch gameStopwatch = Stopwatch();
+  late double screenWidth;
+  late double screenHeight;
 
   @override
   void initState() {
     super.initState();
-    _startGame();
     gameStopwatch.start(); // 게임 시간 시작
 
     // 블루투스 스트림 구독
@@ -44,11 +46,10 @@ class _GameScreenState extends State<BrickBreakerGameScreen> {
       if (!mounted) return; // 위젯이 트리에 존재하는지 확인
       setState(() {
         double pitch = data[1]; // pitch 값 가져오기
+        double pressure1 = data[6]; // pressure1 값
+        double pressure2 = data[7]; // pressure2 값
 
         // pitch 값 범위에 맞춰 바 위치 조정 (예시로 -14000 ~ 14000 기준)
-        double screenWidth = MediaQuery.of(context).size.width;
-
-        // pitch 값 범위를 조정해 양 끝의 민감도를 맞춤
         double normalizedPitch =
             (pitch + 14000) / 28000; // pitch 범위를 0 ~ 1로 정규화
         barX = normalizedPitch *
@@ -60,6 +61,16 @@ class _GameScreenState extends State<BrickBreakerGameScreen> {
         } else if (barX > screenWidth - widget.barWidth) {
           barX = screenWidth - widget.barWidth;
         }
+
+        // 공이 발사되지 않았을 때는 바가 움직일 때 공도 같이 움직임
+        if (!isBallLaunched) {
+          _resetBallPosition();
+        }
+
+        // pressure1 또는 pressure2가 0보다 클 때 공 발사
+        if (!isBallLaunched && (pressure1 > 0 || pressure2 > 0)) {
+          _launchBall(); // 공을 발사하는 함수
+        }
       });
     });
   }
@@ -67,18 +78,36 @@ class _GameScreenState extends State<BrickBreakerGameScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    screenWidth = MediaQuery.of(context).size.width;
+    screenHeight = MediaQuery.of(context).size.height;
     _resetBall(); // MediaQuery에 의존하는 로직을 여기서 호출
     _createBlocks(); // 블록 생성도 didChangeDependencies에서 호출
   }
 
   void _resetBall() {
+    // 공을 바 위에 고정
+    _resetBallPosition(); // 공을 바 위에 고정하는 함수 호출
+    ballSpeedX = 0.0; // 공을 고정할 때는 속도를 0으로 설정
+    ballSpeedY = 0.0; // 공을 고정할 때는 속도를 0으로 설정
+    isBallLaunched = false; // 공이 아직 발사되지 않음
+  }
+
+  void _resetBallPosition() {
+    // 바 중앙에 공을 위치시킴
     ballX = barX + widget.barWidth / 2 - widget.ballSize / 2;
-    ballY = MediaQuery.of(context).size.height - 100 - widget.ballSize;
-    ballSpeedX = widget.ballSpeed;
-    ballSpeedY = -widget.ballSpeed;
+    ballY = screenHeight - 100 - widget.ballSize;
+  }
+
+  void _launchBall() {
+    // 공 발사
+    ballSpeedX = widget.ballSpeed; // 공의 속도 설정
+    ballSpeedY = -widget.ballSpeed; // 위로 발사
+    isBallLaunched = true;
+    _startGame(); // 게임 시작
   }
 
   void _startGame() {
+    // 게임 루프 시작
     _timer = Timer.periodic(const Duration(milliseconds: 16), (timer) {
       if (!mounted) return; // 위젯이 트리에 존재하는지 확인
       setState(() {
@@ -92,14 +121,13 @@ class _GameScreenState extends State<BrickBreakerGameScreen> {
     ballX += ballSpeedX;
     ballY += ballSpeedY;
 
-    if (ballX <= 0 ||
-        ballX >= MediaQuery.of(context).size.width - widget.ballSize) {
+    if (ballX <= 0 || ballX >= screenWidth - widget.ballSize) {
       ballSpeedX = -ballSpeedX;
     }
     if (ballY <= 0) {
       ballSpeedY = -ballSpeedY;
     }
-    if (ballY >= MediaQuery.of(context).size.height - widget.ballSize) {
+    if (ballY >= screenHeight - widget.ballSize) {
       _gameOver();
     }
   }
@@ -112,9 +140,9 @@ class _GameScreenState extends State<BrickBreakerGameScreen> {
           Rect.fromLTWH(ballX, ballY, widget.ballSize, widget.ballSize);
 
       if (ballRect.overlaps(block)) {
-        ballSpeedY = -ballSpeedY;
+        ballSpeedY = -ballSpeedY; // Y축 속도 반전
         setState(() {
-          blocks.removeAt(i);
+          blocks.removeAt(i); // 블록 제거
           totalBlocksDestroyed++;
         });
 
@@ -126,18 +154,26 @@ class _GameScreenState extends State<BrickBreakerGameScreen> {
       }
     }
 
-    // 바와 충돌 처리
-    if (ballY >= MediaQuery.of(context).size.height - 60 &&
-        ballX >= barX &&
+    // 바와 충돌 처리 (공이 바와 정확히 맞아야 함)
+    double barTop = MediaQuery.of(context).size.height - 60;
+
+    // 공이 바와 충돌했는지 확인
+    if (ballY + widget.ballSize >= barTop &&
+        ballY <= barTop && // 공이 바의 높이 내에 위치
+        ballX + widget.ballSize >= barX && // 공이 바의 좌측 끝 이상에 위치
         ballX <= barX + widget.barWidth) {
+      // 공이 바의 우측 끝 이하에 위치
+
+      // 공의 Y축 방향을 반전하여 위로 튕겨나가게 함
       ballSpeedY = -ballSpeedY;
+
+      // 공의 X축 속도는 그대로 유지 (공의 속도 조절 없음)
     }
   }
 
   void _createBlocks() {
     Random random = Random();
     int blockCount = random.nextInt(16) + 15; // 15~30개 블록 생성
-    double screenWidth = MediaQuery.of(context).size.width;
     double blockGap = 10; // 블록 간 간격
     double sideMargin = 20; // 양쪽 마진
     double totalBlockWidth = screenWidth - (sideMargin * 2); // 사용 가능한 너비
@@ -223,9 +259,12 @@ class _GameScreenState extends State<BrickBreakerGameScreen> {
                   barX = details.localPosition.dx - widget.barWidth / 2;
                   if (barX < 0) {
                     barX = 0;
-                  } else if (barX >
-                      MediaQuery.of(context).size.width - widget.barWidth) {
-                    barX = MediaQuery.of(context).size.width - widget.barWidth;
+                  } else if (barX > screenWidth - widget.barWidth) {
+                    barX = screenWidth - widget.barWidth;
+                  }
+                  // 공이 발사되지 않았을 때 공이 바와 함께 움직이도록
+                  if (!isBallLaunched) {
+                    _resetBallPosition();
                   }
                 });
               },
