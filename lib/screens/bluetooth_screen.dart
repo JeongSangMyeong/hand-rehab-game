@@ -1,10 +1,12 @@
+// ignore_for_file: unused_field
+
+import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
 import 'package:hand_rehab_game/screens/game_list_screen.dart';
 import 'package:permission_handler/permission_handler.dart';
-import '../utils/logger.dart'; // 로깅 가져오기
-import 'dart:async';
+import '../utils/logger.dart';
 
 class BluetoothScreen extends StatefulWidget {
   const BluetoothScreen({super.key});
@@ -16,16 +18,16 @@ class BluetoothScreen extends StatefulWidget {
 class _BluetoothScreenState extends State<BluetoothScreen> {
   BluetoothState _bluetoothState = BluetoothState.UNKNOWN;
   BluetoothConnection? connection;
-  List<BluetoothDevice> _devicesList = [];
-  BluetoothDevice? _selectedDevice;
-  bool _isConnecting = false; // 연결 중 상태 추가
+  BluetoothDevice? _targetDevice;
+  bool _isConnecting = false;
+  String _connectionStatus = "BR14_2052 연결 중...";
 
-  // 모든 변수
+  // 블루투스 데이터 변수들
   double roll = 0.0, pitch = 0.0, yaw = 0.0;
   double accx = 0.0, accy = 0.0, accz = 0.0;
   double pressure1 = 0.0, pressure2 = 0.0;
 
-  // broadcast()를 사용하여 여러 구독자가 가능하게 설정
+  // StreamController for multiple listeners
   final StreamController<List<double>> _bluetoothDataController =
       StreamController<List<double>>.broadcast();
 
@@ -38,7 +40,9 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
         _bluetoothState = state;
       });
     });
-    _getPairedDevices();
+
+    // 블루투스 활성화 요청 후 자동 연결 시도
+    _startAutoConnection();
   }
 
   Future<void> _checkPermissions() async {
@@ -55,21 +59,53 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
     }
   }
 
+  void _startAutoConnection() async {
+    setState(() {
+      _isConnecting = true;
+    });
+
+    await _attemptAutoConnection();
+  }
+
+  Future<void> _attemptAutoConnection() async {
+    while (true) {
+      setState(() {
+        _connectionStatus = "BR14_2052 검색 중...";
+      });
+      await _getPairedDevices();
+      if (_targetDevice != null) {
+        await _attemptConnection(_targetDevice!);
+        break;
+      } else {
+        setState(() {
+          _connectionStatus = "BR14_2052 연결 실패... 재연결 중...";
+        });
+        await Future.delayed(const Duration(seconds: 3));
+      }
+    }
+  }
+
   Future<void> _getPairedDevices() async {
     try {
       List<BluetoothDevice> devices =
           await FlutterBluetoothSerial.instance.getBondedDevices();
-      setState(() {
-        _devicesList = devices;
-      });
+      // BR14_2052 기기 찾기
+      for (BluetoothDevice device in devices) {
+        if (device.name == 'BR14_2052') {
+          setState(() {
+            _targetDevice = device;
+          });
+          break;
+        }
+      }
     } catch (e) {
       log.severe("Error getting paired devices: $e");
     }
   }
 
-  Future<void> _connectToDevice(BluetoothDevice device) async {
+  Future<void> _attemptConnection(BluetoothDevice device) async {
     setState(() {
-      _isConnecting = true; // 연결 시 로딩 상태로 변경
+      _connectionStatus = "BR14_2052 연결 중...";
     });
 
     try {
@@ -79,15 +115,12 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
 
         connection.input!.listen((Uint8List data) {
           String incomingData = String.fromCharCodes(data);
+          log.info('Received data: $incomingData');
 
-          // 로그 추가: 데이터 수신 로그
-          log.info('Received data: $incomingData'); // Raw 데이터 로그
-
-          // 데이터를 파싱
+          // 데이터 파싱
           List<String> parsedNumbers = _parseNumbers(incomingData);
 
           if (parsedNumbers.isNotEmpty && parsedNumbers.length >= 6) {
-            // 로그 추가: 파싱된 데이터 로그
             log.info('Parsed data: $parsedNumbers');
 
             roll = double.tryParse(parsedNumbers[0]) ?? 0.0;
@@ -104,108 +137,63 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
               pressure2 = double.tryParse(parsedNumbers[7]) ?? 0.0;
             }
 
-            // 로그 추가: 각 센서 값 로그
-            log.info('Parsed values - Roll: $roll, Pitch: $pitch, Yaw: $yaw, '
-                'AccX: $accx, AccY: $accy, AccZ: $accz, '
-                'Pressure1: $pressure1, Pressure2: $pressure2');
-
-            // StreamController에 데이터 추가
             _bluetoothDataController.add(
                 [roll, pitch, yaw, accx, accy, accz, pressure1, pressure2]);
           } else {
-            // 로그 추가: 데이터 파싱 실패 시 경고 로그
             log.warning(
                 'Parsed numbers are less than expected: $parsedNumbers');
-          }
-
-          if (incomingData.contains('!')) {
-            connection.finish(); // Closing connection
-            log.info('Disconnecting by local host');
           }
         }).onDone(() {
           log.info('Disconnected by remote request');
         });
 
-        // 연결 성공 시 팝업 띄우기
-        _showSuccessDialog();
+        setState(() {
+          _connectionStatus = "BR14_2052 연결되었습니다!";
+        });
+
+        Future.delayed(const Duration(seconds: 1), _navigateToGameList);
       });
     } catch (e) {
       log.severe('Error connecting to the device: $e');
-      _showFailureDialog(); // 연결 실패 시 팝업 띄우기
-    } finally {
       setState(() {
-        _isConnecting = false; // 연결 시도가 끝난 후 로딩 상태 해제
+        _connectionStatus = "BR14_2052 연결 실패... 재연결 중...";
+      });
+
+      // 재연결 시도
+      Future.delayed(const Duration(seconds: 3), () {
+        _attemptAutoConnection(); // 재연결 시도
       });
     }
   }
 
+  void _navigateToGameList() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => GameListScreen(
+          initialRoll: roll,
+          initialPitch: pitch,
+          initialYaw: yaw,
+          initialAccx: accx,
+          initialAccy: accy,
+          initialAccz: accz,
+          initialPressure1: pressure1,
+          initialPressure2: pressure2,
+          bluetoothDataStream: _bluetoothDataController.stream,
+        ),
+      ),
+    );
+  }
+
   List<String> _parseNumbers(String data) {
-    // 부호가 포함된 숫자를 올바르게 파싱하기 위한 정규식
     final RegExp regex = RegExp(r'([-+]?\d*\.\d+|[-+]?\d+)');
     return regex.allMatches(data).map((m) => m.group(0)!).toList();
-  }
-
-  void _showSuccessDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("연결 성공"),
-          content: const Text("블루투스 장치와의 연결에 성공했습니다."),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context); // 팝업 닫기
-                // 게임 설정 화면으로 이동, 스트림과 초기값 전달
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => GameListScreen(
-                      initialRoll: roll,
-                      initialPitch: pitch,
-                      initialYaw: yaw,
-                      initialAccx: accx,
-                      initialAccy: accy,
-                      initialAccz: accz,
-                      initialPressure1: pressure1,
-                      initialPressure2: pressure2,
-                      bluetoothDataStream: _bluetoothDataController.stream,
-                    ),
-                  ),
-                );
-              },
-              child: const Text("확인"),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showFailureDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("연결 실패"),
-          content: const Text("연결에 실패했습니다. 다시 시도해 주십시오."),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context); // 팝업 닫기
-              },
-              child: const Text("확인"),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   @override
   void dispose() {
     connection?.dispose();
-    _bluetoothDataController.close(); // StreamController 닫기
+    _bluetoothDataController.close();
     super.dispose();
   }
 
@@ -215,57 +203,18 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
       appBar: AppBar(
         title: const Text('블루투스 연결하기'),
       ),
-      body: Stack(
-        children: [
-          Column(
-            children: <Widget>[
-              SwitchListTile(
-                title: const Text('블루투스 사용'),
-                value: _bluetoothState.isEnabled,
-                onChanged: (bool value) {
-                  if (value) {
-                    FlutterBluetoothSerial.instance.requestEnable();
-                  } else {
-                    FlutterBluetoothSerial.instance.requestDisable();
-                  }
-                  _getPairedDevices();
-                },
-              ),
-              DropdownButton<BluetoothDevice>(
-                hint: const Text('장치 선택'),
-                items: _devicesList.map((BluetoothDevice device) {
-                  return DropdownMenuItem<BluetoothDevice>(
-                    value: device,
-                    child: Text(device.name!),
-                  );
-                }).toList(),
-                onChanged: (BluetoothDevice? value) {
-                  setState(() {
-                    _selectedDevice = value;
-                  });
-                },
-                value: _selectedDevice,
-              ),
-              ElevatedButton(
-                onPressed: _selectedDevice != null && !_isConnecting
-                    ? () => _connectToDevice(_selectedDevice!)
-                    : null,
-                child: const Text('연결하기'),
-              ),
-            ],
-          ),
-          if (_isConnecting)
-            const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 10),
-                  Text('연결 중...'),
-                ],
-              ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              _connectionStatus,
+              style: const TextStyle(fontSize: 18),
             ),
-        ],
+            const SizedBox(height: 20),
+            const CircularProgressIndicator(),
+          ],
+        ),
       ),
     );
   }

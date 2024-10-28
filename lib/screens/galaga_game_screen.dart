@@ -4,8 +4,15 @@ import 'package:flutter/material.dart';
 
 class GalagaGameScreen extends StatefulWidget {
   final Stream<List<double>> bluetoothDataStream;
+  final int enemyCount; // 난이도에 따른 적의 수
+  final double playerSpeed; // 기체 속도 조절
 
-  const GalagaGameScreen({super.key, required this.bluetoothDataStream});
+  const GalagaGameScreen({
+    super.key,
+    required this.bluetoothDataStream,
+    required this.enemyCount,
+    required this.playerSpeed,
+  });
 
   @override
   _GalagaGameScreenState createState() => _GalagaGameScreenState();
@@ -39,12 +46,14 @@ class _GalagaGameScreenState extends State<GalagaGameScreen> {
         double pressure1 = data[6]; // 총알 발사
         double pressure2 = data[7]; // 총알 발사
 
-        // 좌우 이동 (pitch) - 기체가 화면 밖으로 나가지 않도록 처리
-        playerX = (pitch / 14000) * (screenWidth / 2 - 25);
+        // 좌우 이동 (pitch) - 기체 속도 조절 반영
+        playerX +=
+            (pitch / 14000) * (screenWidth / 2 - 200) * widget.playerSpeed;
         playerX = playerX.clamp(-screenWidth / 2 + 25, screenWidth / 2 - 25);
 
-        // 상하 이동 (roll), 방향 반대로 설정 및 경계 처리
-        playerY = (-roll / 14000) * (screenHeight / 2 - 50);
+        // 상하 이동 (roll) - 기체 속도 조절 반영
+        playerY +=
+            (-roll / 14000) * (screenHeight / 2 - 300) * widget.playerSpeed;
         playerY = playerY.clamp(-screenHeight / 2 + 20, screenHeight / 2 - 500);
 
         if ((pressure1 > 0 || pressure2 > 0) &&
@@ -61,11 +70,9 @@ class _GalagaGameScreenState extends State<GalagaGameScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // 화면 크기 설정을 didChangeDependencies에서 호출하여 MediaQuery에 접근
     screenWidth = MediaQuery.of(context).size.width;
     screenHeight = MediaQuery.of(context).size.height;
-
-    _createEnemies(); // 화면 크기가 결정된 후 적을 생성
+    _createEnemies(widget.enemyCount); // 난이도에 따른 적 생성
   }
 
   void _startGame() {
@@ -82,36 +89,34 @@ class _GalagaGameScreenState extends State<GalagaGameScreen> {
   void _shootBullet() {
     bullets
         .add(Offset(playerX + screenWidth / 2, playerY + screenHeight - 100));
-    lastBulletFired = DateTime.now(); // 발사 시점 기록
+    lastBulletFired = DateTime.now();
   }
 
   void _moveBullets() {
     bullets = bullets.map((bullet) {
       return Offset(bullet.dx, bullet.dy - 5); // 총알 위로 이동
     }).toList();
-    bullets.removeWhere((bullet) => bullet.dy < 0); // 화면 위를 벗어나면 삭제
+    bullets.removeWhere((bullet) => bullet.dy < 0);
   }
 
   void _moveEnemies() {
     enemies = enemies.map((enemy) {
-      return Offset(enemy.dx, enemy.dy + 2); // 적 기체 아래로 이동
+      return Offset(enemy.dx, enemy.dy + 2);
     }).toList();
-    enemies.removeWhere((enemy) => enemy.dy > screenHeight); // 화면을 벗어나면 삭제
+    enemies.removeWhere((enemy) => enemy.dy > screenHeight);
 
-    // 적이 모두 사라지면 새 적 생성
     if (enemies.isEmpty) {
-      _createEnemies();
+      _createEnemies(widget.enemyCount);
     }
   }
 
-  void _createEnemies() {
+  void _createEnemies(int count) {
     final random = Random();
     enemies.clear();
 
-    // 적 기체 5개 생성 (좌우 경계에서 일정 간격 유지)
-    for (int i = 0; i < 5; i++) {
-      double x = random.nextDouble() * (screenWidth - 80) + 40; // 좌우 간격 추가
-      double y = -random.nextInt(300).toDouble(); // 화면 위쪽에서 등장
+    for (int i = 0; i < count; i++) {
+      double x = random.nextDouble() * (screenWidth - 80) + 40;
+      double y = -random.nextInt(300).toDouble();
       enemies.add(Offset(x, y));
     }
   }
@@ -123,30 +128,31 @@ class _GalagaGameScreenState extends State<GalagaGameScreen> {
       for (int j = enemies.length - 1; j >= 0; j--) {
         Rect enemyRect = Rect.fromLTWH(enemies[j].dx, enemies[j].dy, 40, 40);
 
-        // 적과 총알이 겹치는지 충돌 감지
         if (bulletRect.overlaps(enemyRect)) {
-          bullets.removeAt(i); // 총알 삭제
-          enemies.removeAt(j); // 적 삭제
+          bullets.removeAt(i);
+          enemies.removeAt(j);
           enemiesDestroyed++;
           break;
         }
       }
     }
 
-    // 적과 플레이어 기체의 충돌을 감지
     for (var enemy in enemies) {
       Rect enemyRect = Rect.fromLTWH(
-        enemy.dx, enemy.dy, 40, 40, // 적 기체 크기
+        enemy.dx,
+        enemy.dy,
+        40,
+        40,
       );
 
       Rect playerRect = Rect.fromLTWH(
         playerX + screenWidth / 2 - 25,
         playerY + screenHeight - 100,
-        50, 50, // 플레이어 기체 크기
+        50,
+        50,
       );
 
       if (enemyRect.overlaps(playerRect)) {
-        // 충돌이 감지된 경우에만 게임 종료
         _gameOver();
         break;
       }
@@ -154,12 +160,12 @@ class _GalagaGameScreenState extends State<GalagaGameScreen> {
   }
 
   void _gameOver() {
-    _timer?.cancel(); // 타이머를 취소하여 움직임을 멈춤
+    _timer?.cancel();
     gameStopwatch.stop();
 
     showDialog(
       context: context,
-      barrierDismissible: false, // 대화 상자가 닫히기 전까지 화면 클릭 불가
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: const Text("게임 종료"),
         content: Text(
@@ -167,8 +173,8 @@ class _GalagaGameScreenState extends State<GalagaGameScreen> {
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.pop(context); // 다이얼로그 닫기
-              Navigator.pop(context); // 이전 화면(설정 페이지)으로 돌아가기
+              Navigator.pop(context);
+              Navigator.pop(context);
             },
             child: const Text("확인"),
           ),
@@ -188,40 +194,35 @@ class _GalagaGameScreenState extends State<GalagaGameScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('갤러그 게임'),
+        title: const Text('비행기 게임'),
       ),
       body: Stack(
         children: [
-          // 배경 이미지 표시
           Positioned.fill(
             child: Image.asset(
               'assets/background-1024x1024.png',
               fit: BoxFit.cover,
             ),
           ),
-          // 내 기체 표시
           Positioned(
             left: playerX + screenWidth / 2 - 25,
             top: playerY + screenHeight - 100,
             child: Image.asset(
               'assets/my_plane.png',
-              width: 30,
-              height: 30,
+              width: 50,
+              height: 50,
             ),
           ),
-
-          // 총알 표시
           for (var bullet in bullets)
             Positioned(
-                left: bullet.dx,
-                top: bullet.dy,
-                child: Image.asset(
-                  'assets/bullet.png',
-                  width: 15,
-                  height: 20,
-                )),
-
-          // 적 기체 표시
+              left: bullet.dx,
+              top: bullet.dy,
+              child: Image.asset(
+                'assets/bullet.png',
+                width: 25,
+                height: 30,
+              ),
+            ),
           for (var enemy in enemies)
             Positioned(
               left: enemy.dx,

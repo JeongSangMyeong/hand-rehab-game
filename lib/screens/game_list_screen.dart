@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'brick_breaker_game_setting_screen.dart';
-import 'galaga_game_setting_screen.dart'; // 갤러그 게임 설정 화면 추가
+import 'galaga_game_setting_screen.dart'; // 비행기 게임 설정 화면 추가
 
 class GameListScreen extends StatefulWidget {
   final Stream<List<double>> bluetoothDataStream;
@@ -120,7 +120,7 @@ class _GameListScreenState extends State<GameListScreen> {
                 ),
                 _buildGameCard(
                   context,
-                  "2. 갤러그 게임",
+                  "2. 비행기 게임",
                   GalagaGameSettingScreen(
                     initialRoll: roll,
                     initialPitch: pitch,
@@ -160,7 +160,7 @@ class _GameListScreenState extends State<GameListScreen> {
           padding: const EdgeInsets.all(16.0),
           child: Row(
             children: [
-              const Icon(Icons.gamepad, size: 40, color: Colors.blue),
+              const Icon(Icons.sports_esports, size: 40, color: Colors.blue),
               const SizedBox(width: 16),
               Text(
                 gameTitle,
