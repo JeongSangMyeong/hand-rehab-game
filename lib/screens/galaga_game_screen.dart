@@ -28,6 +28,10 @@ class _GalagaGameScreenState extends State<GalagaGameScreen> {
   Timer? _timer;
   late StreamSubscription<List<double>> _bluetoothSubscription;
 
+  // 화면 비율을 기준으로 기체 크기를 설정
+  late double playerWidth;
+  late double playerHeight;
+
   double screenWidth = 0;
   double screenHeight = 0;
   DateTime lastBulletFired = DateTime.now(); // 마지막 총알 발사 시간
@@ -48,7 +52,7 @@ class _GalagaGameScreenState extends State<GalagaGameScreen> {
 
         // 좌우 이동 (pitch) - 기체 속도 조절 반영
         playerX +=
-            (pitch / 14000) * (screenWidth / 2 - 200) * widget.playerSpeed;
+            (pitch / 14000) * (screenWidth / 2 - 150) * widget.playerSpeed;
         playerX = playerX.clamp(-screenWidth / 2 + 25, screenWidth / 2 - 25);
 
         // 상하 이동 (roll) - 기체 속도 조절 반영
@@ -72,6 +76,11 @@ class _GalagaGameScreenState extends State<GalagaGameScreen> {
     super.didChangeDependencies();
     screenWidth = MediaQuery.of(context).size.width;
     screenHeight = MediaQuery.of(context).size.height;
+
+    // 화면 크기에 따른 기체 크기 설정
+    playerWidth = screenWidth * 0.1; // 기체 너비를 화면 너비의 10%로 설정
+    playerHeight = playerWidth * 1.2; // 기체 높이를 너비의 120%로 설정하여 비율 유지
+
     _createEnemies(widget.enemyCount); // 난이도에 따른 적 생성
   }
 
@@ -87,8 +96,10 @@ class _GalagaGameScreenState extends State<GalagaGameScreen> {
   }
 
   void _shootBullet() {
-    bullets
-        .add(Offset(playerX + screenWidth / 2, playerY + screenHeight - 100));
+    // 총알이 기체의 정확한 중앙 상단에서 발사
+    bullets.add(Offset(
+        playerX + screenWidth / 2 - playerWidth / 2 + playerWidth / 2,
+        playerY + screenHeight - playerHeight - 20));
     lastBulletFired = DateTime.now();
   }
 
@@ -123,10 +134,20 @@ class _GalagaGameScreenState extends State<GalagaGameScreen> {
 
   void _checkCollisions() {
     for (int i = bullets.length - 1; i >= 0; i--) {
-      Rect bulletRect = Rect.fromLTWH(bullets[i].dx, bullets[i].dy, 5, 15);
+      Rect bulletRect = Rect.fromLTWH(
+        bullets[i].dx,
+        bullets[i].dy,
+        playerWidth * 0.4, // 총알 너비를 기체 너비에 비례하게 설정
+        playerHeight * 0.7, // 총알 높이 설정
+      );
 
       for (int j = enemies.length - 1; j >= 0; j--) {
-        Rect enemyRect = Rect.fromLTWH(enemies[j].dx, enemies[j].dy, 40, 40);
+        Rect enemyRect = Rect.fromCenter(
+          center: Offset(enemies[j].dx + playerWidth * 0.7,
+              enemies[j].dy + playerHeight * 0.7),
+          width: playerWidth * 0.6, // 적 기체의 충돌 범위를 축소하여 이미지와 일치
+          height: playerHeight * 0.6,
+        );
 
         if (bulletRect.overlaps(enemyRect)) {
           bullets.removeAt(i);
@@ -138,18 +159,20 @@ class _GalagaGameScreenState extends State<GalagaGameScreen> {
     }
 
     for (var enemy in enemies) {
-      Rect enemyRect = Rect.fromLTWH(
-        enemy.dx,
-        enemy.dy,
-        40,
-        40,
+      Rect enemyRect = Rect.fromCenter(
+        center:
+            Offset(enemy.dx + playerWidth * 0.7, enemy.dy + playerHeight * 0.7),
+        width: playerWidth * 0.9,
+        height: playerHeight * 0.9,
       );
 
-      Rect playerRect = Rect.fromLTWH(
-        playerX + screenWidth / 2 - 25,
-        playerY + screenHeight - 100,
-        50,
-        50,
+      Rect playerRect = Rect.fromCenter(
+        center: Offset(
+          playerX + screenWidth / 2,
+          playerY + screenHeight - playerHeight / 2,
+        ),
+        width: playerWidth * 0.7, // 기체의 충돌 범위 축소
+        height: playerHeight * 0.8,
       );
 
       if (enemyRect.overlaps(playerRect)) {
@@ -169,7 +192,7 @@ class _GalagaGameScreenState extends State<GalagaGameScreen> {
       builder: (context) => AlertDialog(
         title: const Text("게임 종료"),
         content: Text(
-            "총 $enemiesDestroyed명의 적을 잡았습니다.\n경과 시간: ${gameStopwatch.elapsed.inSeconds}초"),
+            "총 $enemiesDestroyed개의 적을 잡았습니다.\n경과 시간: ${gameStopwatch.elapsed.inSeconds}초"),
         actions: [
           TextButton(
             onPressed: () {
@@ -193,9 +216,6 @@ class _GalagaGameScreenState extends State<GalagaGameScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('비행기 게임'),
-      ),
       body: Stack(
         children: [
           Positioned.fill(
@@ -205,12 +225,13 @@ class _GalagaGameScreenState extends State<GalagaGameScreen> {
             ),
           ),
           Positioned(
-            left: playerX + screenWidth / 2 - 25,
-            top: playerY + screenHeight - 100,
+            left: playerX + screenWidth / 2 - playerWidth / 2,
+            top: playerY + screenHeight - playerHeight - 20,
             child: Image.asset(
               'assets/my_plane.png',
-              width: 50,
-              height: 50,
+              width: playerWidth,
+              height: playerHeight,
+              alignment: Alignment.center,
             ),
           ),
           for (var bullet in bullets)
@@ -219,8 +240,9 @@ class _GalagaGameScreenState extends State<GalagaGameScreen> {
               top: bullet.dy,
               child: Image.asset(
                 'assets/bullet.png',
-                width: 25,
-                height: 30,
+                width: playerWidth * 0.4,
+                height: playerHeight * 0.7,
+                alignment: Alignment.center,
               ),
             ),
           for (var enemy in enemies)
@@ -229,10 +251,37 @@ class _GalagaGameScreenState extends State<GalagaGameScreen> {
               top: enemy.dy,
               child: Image.asset(
                 'assets/enemy_plane.png',
-                width: 50,
-                height: 50,
+                width: playerWidth * 1.4,
+                height: playerHeight * 1.4,
+                alignment: Alignment.center,
               ),
             ),
+          Positioned(
+            bottom: 8, // 화면의 하단에 위치
+            left: 8,
+            right: 8,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "잡은 적: $enemiesDestroyed",
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green,
+                  ),
+                ),
+                Text(
+                  "경과 시간: ${gameStopwatch.elapsed.inSeconds}초",
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

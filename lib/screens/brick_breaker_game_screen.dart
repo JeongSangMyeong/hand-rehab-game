@@ -210,7 +210,7 @@ class _BrickBreakerGameScreenState extends State<BrickBreakerGameScreen> {
       builder: (context) => AlertDialog(
         title: const Text("게임 종료"),
         content: Text(
-            "총 $totalBlocksDestroyed개의 블록을 깼습니다.\n경과 시간: ${gameStopwatch.elapsed.inSeconds}초"),
+            "총 $totalBlocksDestroyed개의 블록을 제거했습니다.\n경과 시간: ${gameStopwatch.elapsed.inSeconds}초"),
         actions: [
           TextButton(
             onPressed: () {
@@ -283,9 +283,35 @@ class _BrickBreakerGameScreenState extends State<BrickBreakerGameScreen> {
               child: Container(
                 width: block.width,
                 height: block.height,
-                color: Colors.green,
+                color: Colors.deepPurple,
               ),
             ),
+          Positioned(
+            bottom: 8, // 화면의 하단에 위치
+            left: 8,
+            right: 8,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "제거한 블록 수: $totalBlocksDestroyed",
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green,
+                  ),
+                ),
+                Text(
+                  "경과 시간: ${gameStopwatch.elapsed.inSeconds}초",
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

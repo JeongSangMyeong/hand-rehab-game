@@ -40,7 +40,7 @@ class _GameSettingsScreenState extends State<BrickBreakerGameSettingScreen> {
   // 설정 값
   double ballSizeFactor = 0.05; // 공 크기 설정 값
   double ballSpeedFactor = 0.005; // 공 속도 설정 값
-  double barWidthFactor = 0.2; // 바 크기 설정 값
+  double barWidthFactor = 0.2; // 막대 크기 설정 값
 
   StreamSubscription<List<double>>? _bluetoothSubscription;
 
@@ -91,6 +91,23 @@ class _GameSettingsScreenState extends State<BrickBreakerGameSettingScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // 게임 설명
+            const Text(
+              "게임 설명:\n"
+              "막대를 움직이고 공을 튕겨서 벽을 제거하세요.\n\n"
+              "조작 방법:\n"
+              "- 막대를 좌, 우로 움직일 수 있습니다.\n"
+              "- 악력을 주면 공이 움직입니다.\n\n"
+              "목표:\n"
+              "- 공으로 벽을 제거하면 점수가 올라갑니다.\n"
+              "- 공을 놓칠 시 게임이 종료됩니다.\n\n"
+              "공 크기와 속도, 막대 크기를 설정할 수 있습니다.",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
             // 공 크기 설정
             Text("공 크기: ${(ballSizeFactor * 100).toStringAsFixed(0)}"),
             Slider(
@@ -117,8 +134,8 @@ class _GameSettingsScreenState extends State<BrickBreakerGameSettingScreen> {
               },
             ),
 
-            // 바 크기 설정
-            Text("바 크기: ${(barWidthFactor * 100).toStringAsFixed(0)}"),
+            // 막대 크기 설정
+            Text("막대 크기: ${(barWidthFactor * 100).toStringAsFixed(0)}"),
             Slider(
               value: barWidthFactor,
               min: 0.1,

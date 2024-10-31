@@ -89,14 +89,23 @@ class _GalagaGameSettingScreenState extends State<GalagaGameSettingScreen> {
           children: [
             // 게임 설명
             const Text(
-              "비행기 게임 설명:\n기체를 움직이며 적을 피하고, 총알을 발사해 적을 처치하세요. "
-              "난이도와 기체 속도를 설정할 수 있습니다.",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              "게임 설명:\n"
+              "기체를 움직이며 적을 피하고, 총알을 발사해 적을 처치하세요.\n\n"
+              "조작 방법:\n"
+              "- 상, 하, 좌, 우로 기체를 움직일 수 있습니다.\n"
+              "- 악력을 주면 총알을 발사됩니다.\n\n"
+              "목표:\n"
+              "- 총알로 적 기체를 파괴하면 점수를 얻습니다.\n"
+              "- 적 기체와 부딪히면 게임이 종료됩니다.\n\n"
+              "난이도와 기체 속도를 조절할 수 있습니다.",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 20),
-
             // 난이도 설정
-            Text("난이도 (적 수): $enemyCountFactor"),
+            Text("난이도 (적 수): ${enemyCountFactor.toInt()}"),
             Slider(
               value: enemyCountFactor,
               min: 5,
