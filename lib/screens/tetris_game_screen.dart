@@ -1,6 +1,7 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
 import 'dart:math';
+
+import 'package:flutter/material.dart';
 
 class TetrisGameScreen extends StatefulWidget {
   final Stream<List<double>> bluetoothDataStream;
@@ -93,9 +94,9 @@ class _TetrisGameScreenState extends State<TetrisGameScreen> {
 
       // 좌우 이동
       if (_isLateralMoveAllowed) {
-        if (pitch < -2000) {
+        if (pitch < -4000) {
           _moveHorizontally(-1);
-        } else if (pitch > 2000) {
+        } else if (pitch > 4000) {
           _moveHorizontally(1);
         }
         _isLateralMoveAllowed = false;
@@ -106,7 +107,7 @@ class _TetrisGameScreenState extends State<TetrisGameScreen> {
         );
       }
 
-      // 블록 회전 - 0.5초마다 한 번씩만 회전
+      // 블록 회전 - 0.8초마다 한 번씩만 회전
       if ((pressure1 > 0 || pressure2 > 0) && _canRotate) {
         _rotateShape();
         _canRotate = false;
@@ -165,6 +166,16 @@ class _TetrisGameScreenState extends State<TetrisGameScreen> {
       } else if (_canMove(currentX + 2, currentY, rotatedShape)) {
         setState(() {
           currentX += 2;
+          currentShape = rotatedShape;
+        });
+      } else if (_canMove(currentX + 3, currentY, rotatedShape)) {
+        setState(() {
+          currentX += 3;
+          currentShape = rotatedShape;
+        });
+      } else if (_canMove(currentX - 3, currentY, rotatedShape)) {
+        setState(() {
+          currentX -= 3;
           currentShape = rotatedShape;
         });
       }

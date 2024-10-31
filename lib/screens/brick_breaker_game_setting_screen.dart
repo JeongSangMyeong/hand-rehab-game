@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
 import 'dart:async';
+
+import 'package:flutter/material.dart';
 
 import 'brick_breaker_game_screen.dart';
 
@@ -114,6 +115,8 @@ class _GameSettingsScreenState extends State<BrickBreakerGameSettingScreen> {
               value: ballSizeFactor,
               min: 0.03,
               max: 0.1,
+              // divisions: 10,
+              label: ballSizeFactor.toStringAsFixed(0),
               onChanged: (value) {
                 setState(() {
                   ballSizeFactor = value;
@@ -127,6 +130,8 @@ class _GameSettingsScreenState extends State<BrickBreakerGameSettingScreen> {
               value: ballSpeedFactor,
               min: 0.005,
               max: 0.01,
+              // divisions: 10,
+              label: ballSizeFactor.toStringAsFixed(1),
               onChanged: (value) {
                 setState(() {
                   ballSpeedFactor = value;
@@ -140,6 +145,8 @@ class _GameSettingsScreenState extends State<BrickBreakerGameSettingScreen> {
               value: barWidthFactor,
               min: 0.1,
               max: 0.4,
+              // divisions: 10,
+              label: barWidthFactor.toStringAsFixed(0),
               onChanged: (value) {
                 setState(() {
                   barWidthFactor = value;

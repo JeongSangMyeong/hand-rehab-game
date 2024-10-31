@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
 import 'dart:async';
+
+import 'package:flutter/material.dart';
 
 import 'galaga_game_screen.dart';
 
@@ -93,7 +94,7 @@ class _GalagaGameSettingScreenState extends State<GalagaGameSettingScreen> {
               "기체를 움직이며 적을 피하고, 총알을 발사해 적을 처치하세요.\n\n"
               "조작 방법:\n"
               "- 상, 하, 좌, 우로 기체를 움직일 수 있습니다.\n"
-              "- 악력을 주면 총알을 발사됩니다.\n\n"
+              "- 악력을 주면 총알이 발사됩니다.\n\n"
               "목표:\n"
               "- 총알로 적 기체를 파괴하면 점수를 얻습니다.\n"
               "- 적 기체와 부딪히면 게임이 종료됩니다.\n\n"
@@ -111,7 +112,7 @@ class _GalagaGameSettingScreenState extends State<GalagaGameSettingScreen> {
               min: 5,
               max: 15,
               divisions: 10,
-              // label: enemyCountFactor.toString(),
+              label: "${enemyCountFactor.toInt()}개",
               onChanged: (value) {
                 setState(() {
                   enemyCountFactor = value;
@@ -125,6 +126,7 @@ class _GalagaGameSettingScreenState extends State<GalagaGameSettingScreen> {
               value: playerSpeedFactor,
               min: 0.2,
               max: 1.0,
+              label: "${playerSpeedFactor.toStringAsFixed(0)}%",
               onChanged: (value) {
                 setState(() {
                   playerSpeedFactor = value;

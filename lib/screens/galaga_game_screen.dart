@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 class GalagaGameScreen extends StatefulWidget {
@@ -98,8 +99,7 @@ class _GalagaGameScreenState extends State<GalagaGameScreen> {
   void _shootBullet() {
     // 총알이 기체의 정확한 중앙 상단에서 발사
     bullets.add(Offset(
-        playerX + screenWidth / 2 - playerWidth / 2 + playerWidth / 2,
-        playerY + screenHeight - playerHeight - 20));
+        playerX + screenWidth / 2, playerY + screenHeight - playerHeight - 20));
     lastBulletFired = DateTime.now();
   }
 
@@ -126,9 +126,28 @@ class _GalagaGameScreenState extends State<GalagaGameScreen> {
     enemies.clear();
 
     for (int i = 0; i < count; i++) {
-      double x = random.nextDouble() * (screenWidth - 80) + 40;
-      double y = -random.nextInt(300).toDouble();
-      enemies.add(Offset(x, y));
+      Offset newEnemyPosition;
+      bool isPositionValid;
+
+      do {
+        isPositionValid = true;
+        // 랜덤 위치 생성
+        double x = random.nextDouble() * (screenWidth - playerWidth * 1.4) +
+            playerWidth * 0.3;
+        double y = -random.nextInt(300).toDouble();
+        newEnemyPosition = Offset(x, y);
+
+        // 기존 적들과 일정 거리 이상 떨어져 있는지 확인
+        for (var enemy in enemies) {
+          if ((enemy - newEnemyPosition).distance < playerWidth * 1.5) {
+            isPositionValid = false;
+            break;
+          }
+        }
+      } while (!isPositionValid); // 위치가 유효할 때까지 반복
+
+      // 유효한 위치로 설정된 경우 적 리스트에 추가
+      enemies.add(newEnemyPosition);
     }
   }
 

@@ -1,11 +1,12 @@
-// ignore_for_file: unused_field
-
+// BluetoothScreen.dart
 import 'dart:async';
 import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
 import 'package:hand_rehab_game/screens/game_list_screen.dart';
 import 'package:permission_handler/permission_handler.dart';
+
 import '../utils/logger.dart';
 
 class BluetoothScreen extends StatefulWidget {
@@ -22,12 +23,9 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
   bool _isConnecting = false;
   String _connectionStatus = "BR14_2052 연결 중...";
 
-  // 블루투스 데이터 변수들
   double roll = 0.0, pitch = 0.0, yaw = 0.0;
   double accx = 0.0, accy = 0.0, accz = 0.0;
   double pressure1 = 0.0, pressure2 = 0.0;
-
-  // StreamController for multiple listeners
   final StreamController<List<double>> _bluetoothDataController =
       StreamController<List<double>>.broadcast();
 
@@ -63,7 +61,6 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
     setState(() {
       _isConnecting = true;
     });
-
     await _attemptAutoConnection();
   }
 
@@ -89,7 +86,6 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
     try {
       List<BluetoothDevice> devices =
           await FlutterBluetoothSerial.instance.getBondedDevices();
-      // BR14_2052 기기 찾기
       for (BluetoothDevice device in devices) {
         if (device.name == 'BR14_2052') {
           setState(() {
@@ -116,32 +112,23 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
         connection.input!.listen((Uint8List data) {
           String incomingData = String.fromCharCodes(data);
           log.info('Received data: $incomingData');
-
-          // 데이터 파싱
           List<String> parsedNumbers = _parseNumbers(incomingData);
 
           if (parsedNumbers.isNotEmpty && parsedNumbers.length >= 6) {
-            log.info('Parsed data: $parsedNumbers');
-
             roll = double.tryParse(parsedNumbers[0]) ?? 0.0;
             pitch = double.tryParse(parsedNumbers[1]) ?? 0.0;
             yaw = double.tryParse(parsedNumbers[2]) ?? 0.0;
             accx = double.tryParse(parsedNumbers[3]) ?? 0.0;
             accy = double.tryParse(parsedNumbers[4]) ?? 0.0;
             accz = double.tryParse(parsedNumbers[5]) ?? 0.0;
-
-            if (parsedNumbers.length > 6) {
-              pressure1 = double.tryParse(parsedNumbers[6]) ?? 0.0;
-            }
-            if (parsedNumbers.length > 7) {
-              pressure2 = double.tryParse(parsedNumbers[7]) ?? 0.0;
-            }
-
+            pressure1 = parsedNumbers.length > 6
+                ? double.tryParse(parsedNumbers[6]) ?? 0.0
+                : 0.0;
+            pressure2 = parsedNumbers.length > 7
+                ? double.tryParse(parsedNumbers[7]) ?? 0.0
+                : 0.0;
             _bluetoothDataController.add(
                 [roll, pitch, yaw, accx, accy, accz, pressure1, pressure2]);
-          } else {
-            log.warning(
-                'Parsed numbers are less than expected: $parsedNumbers');
           }
         }).onDone(() {
           log.info('Disconnected by remote request');
@@ -158,10 +145,8 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
       setState(() {
         _connectionStatus = "BR14_2052 연결 실패... 재연결 중...";
       });
-
-      // 재연결 시도
       Future.delayed(const Duration(seconds: 3), () {
-        _attemptAutoConnection(); // 재연결 시도
+        _attemptAutoConnection();
       });
     }
   }
