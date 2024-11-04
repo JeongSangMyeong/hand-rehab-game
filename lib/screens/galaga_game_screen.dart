@@ -59,10 +59,10 @@ class _GalagaGameScreenState extends State<GalagaGameScreen> {
         // 상하 이동 (roll) - 기체 속도 조절 반영
         playerY +=
             (-roll / 14000) * (screenHeight / 2 - 300) * widget.playerSpeed;
-        playerY = playerY.clamp(-screenHeight / 2 + 20, screenHeight / 2 - 500);
+        playerY = playerY.clamp(-screenHeight / 2 + 20, screenHeight / 2 - 550);
 
         if ((pressure1 > 0 || pressure2 > 0) &&
-            DateTime.now().difference(lastBulletFired).inMilliseconds >= 500) {
+            DateTime.now().difference(lastBulletFired).inMilliseconds >= 450) {
           _shootBullet();
         }
       });

@@ -1,4 +1,6 @@
 // BluetoothScreen.dart
+// ignore_for_file: unused_field
+
 import 'dart:async';
 import 'dart:typed_data';
 

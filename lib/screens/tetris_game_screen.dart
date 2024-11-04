@@ -168,14 +168,14 @@ class _TetrisGameScreenState extends State<TetrisGameScreen> {
           currentX += 2;
           currentShape = rotatedShape;
         });
-      } else if (_canMove(currentX + 3, currentY, rotatedShape)) {
-        setState(() {
-          currentX += 3;
-          currentShape = rotatedShape;
-        });
       } else if (_canMove(currentX - 3, currentY, rotatedShape)) {
         setState(() {
           currentX -= 3;
+          currentShape = rotatedShape;
+        });
+      } else if (_canMove(currentX + 3, currentY, rotatedShape)) {
+        setState(() {
+          currentX += 3;
           currentShape = rotatedShape;
         });
       }
@@ -281,33 +281,33 @@ class _TetrisGameScreenState extends State<TetrisGameScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          Center(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final blockSize = min(
-                  constraints.maxWidth / columns,
-                  constraints.maxHeight / rows,
-                );
+          Container(
+            color: Colors.black, // 빈 공간을 검정색으로 채우기 위해 기본 배경색을 검정색으로 설정
+            child: Center(
+              child: AspectRatio(
+                aspectRatio: columns / rows, // 테트리스 비율 설정 (10:20)
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final blockSize = constraints.maxWidth / columns;
 
-                final boardWidth = blockSize * columns;
-                final boardHeight = blockSize * rows;
-
-                return Container(
-                  width: boardWidth,
-                  height: boardHeight,
-                  color: Colors.black,
-                  child: CustomPaint(
-                    painter: _TetrisPainter(
-                      board,
-                      currentShape,
-                      currentColor,
-                      currentX,
-                      currentY,
-                      blockSize,
-                    ),
-                  ),
-                );
-              },
+                    return Container(
+                      width: blockSize * columns,
+                      height: blockSize * rows,
+                      color: Colors.black, // 테트리스 보드 색상
+                      child: CustomPaint(
+                        painter: _TetrisPainter(
+                          board,
+                          currentShape,
+                          currentColor,
+                          currentX,
+                          currentY,
+                          blockSize,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
             ),
           ),
           Positioned(
