@@ -357,11 +357,29 @@ class _TetrisPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint();
 
+    // 보라색 테두리 그리기
+    paint.color = Colors.purple;
+    paint.style = PaintingStyle.stroke;
+    paint.strokeWidth = 2.0; // 보드 테두리 두께
+    final boardRect = Rect.fromLTWH(
+        0, 0, blockSize * board[0].length, blockSize * board.length);
+    canvas.drawRect(boardRect, paint);
+
     // 보드 블록 그리기
     for (int i = 0; i < board.length; i++) {
       for (int j = 0; j < board[i].length; j++) {
         if (board[i][j] != 0) {
+          // 블록 내부 색상 설정
           paint.color = _TetrisGameScreenState.shapeColors[board[i][j] - 1];
+          paint.style = PaintingStyle.fill;
+          canvas.drawRect(
+              Rect.fromLTWH(j * blockSize, i * blockSize, blockSize, blockSize),
+              paint);
+
+          // 블록 테두리를 흰색으로 설정
+          paint.color = Colors.black;
+          paint.style = PaintingStyle.stroke;
+          paint.strokeWidth = 1.0;
           canvas.drawRect(
               Rect.fromLTWH(j * blockSize, i * blockSize, blockSize, blockSize),
               paint);
@@ -370,10 +388,21 @@ class _TetrisPainter extends CustomPainter {
     }
 
     // 현재 이동 중인 블록 그리기
-    paint.color = currentColor;
     for (int i = 0; i < currentShape.length; i++) {
       for (int j = 0; j < currentShape[i].length; j++) {
         if (currentShape[i][j] == 1) {
+          // 블록 내부 색상 설정
+          paint.color = currentColor;
+          paint.style = PaintingStyle.fill;
+          canvas.drawRect(
+              Rect.fromLTWH((currentX + j) * blockSize,
+                  (currentY + i) * blockSize, blockSize, blockSize),
+              paint);
+
+          // 블록 테두리를 흰색으로 설정
+          paint.color = Colors.black;
+          paint.style = PaintingStyle.stroke;
+          paint.strokeWidth = 1.0;
           canvas.drawRect(
               Rect.fromLTWH((currentX + j) * blockSize,
                   (currentY + i) * blockSize, blockSize, blockSize),
