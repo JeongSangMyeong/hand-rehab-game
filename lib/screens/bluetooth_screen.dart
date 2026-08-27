@@ -36,6 +36,7 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
     super.initState();
     _checkPermissions();
     FlutterBluetoothSerial.instance.state.then((state) {
+      if (!mounted) return;
       setState(() {
         _bluetoothState = state;
       });
@@ -60,6 +61,7 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
   }
 
   void _startAutoConnection() async {
+    if (!mounted) return;
     setState(() {
       _isConnecting = true;
     });
@@ -67,11 +69,12 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
   }
 
   Future<void> _attemptAutoConnection() async {
-    while (true) {
+    while (mounted) {
       setState(() {
         _connectionStatus = "BR14_2052 검색 중...";
       });
       await _getPairedDevices();
+      if (!mounted) return;
       if (_targetDevice != null) {
         await _attemptConnection(_targetDevice!);
         break;
@@ -90,6 +93,7 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
           await FlutterBluetoothSerial.instance.getBondedDevices();
       for (BluetoothDevice device in devices) {
         if (device.name == 'BR14_2052') {
+          if (!mounted) return;
           setState(() {
             _targetDevice = device;
           });
@@ -102,6 +106,7 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
   }
 
   Future<void> _attemptConnection(BluetoothDevice device) async {
+    if (!mounted) return;
     setState(() {
       _connectionStatus = "BR14_2052 연결 중...";
     });
@@ -136,18 +141,24 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
           log.info('Disconnected by remote request');
         });
 
+        if (!mounted) return;
         setState(() {
           _connectionStatus = "BR14_2052 연결되었습니다!";
         });
 
-        Future.delayed(const Duration(seconds: 1), _navigateToGameList);
+        Future.delayed(const Duration(seconds: 1), () {
+          if (!mounted) return;
+          _navigateToGameList();
+        });
       });
     } catch (e) {
       log.severe('Error connecting to the device: $e');
+      if (!mounted) return;
       setState(() {
         _connectionStatus = "BR14_2052 연결 실패... 재연결 중...";
       });
       Future.delayed(const Duration(seconds: 3), () {
+        if (!mounted) return;
         _attemptAutoConnection();
       });
     }
