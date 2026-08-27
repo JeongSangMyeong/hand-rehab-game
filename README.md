@@ -4,6 +4,12 @@ Flutter 기반으로 개발된 블루투스 연동 재활 게임 앱입니다. �
 
 ---
 
+## 🎥 시연 영상
+
+뇌가소성 재활기기 시연 영상: [https://youtu.be/1YC9MNHcwRc](https://youtu.be/1YC9MNHcwRc)
+
+---
+
 ## 🧩 주요 기능
 
 - **자동 블루투스 연결**
@@ -72,3 +78,4 @@ flutter pub get
 
 # 앱 실행
 flutter run
+```

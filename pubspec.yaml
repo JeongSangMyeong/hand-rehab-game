@@ -31,16 +31,12 @@ dependencies:
   logging: ^1.0.2
   flutter:
     sdk: flutter
-  provider: ^6.0.0
   flutter_native_splash: ^2.4.1
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.6
-  flutter_blue: ^0.8.0
-  logger: ^2.4.0
   permission_handler: ^11.3.1
-  flutter_blue_plus: ^1.33.4
   flutter_bluetooth_serial: ^0.4.0
 
 dev_dependencies:
