@@ -35,6 +35,8 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
   final SerialLineBuffer _lineBuffer = SerialLineBuffer(
     onOverflow: () => log.warning('Dropped data: no line ending within '
         '${SerialLineBuffer.defaultMaxLineLength} bytes'),
+    onChunkMode: () => log.warning('No line ending from device yet: '
+        'reading each chunk as one line (legacy mode)'),
   );
 
   @override

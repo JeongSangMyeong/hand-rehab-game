@@ -84,9 +84,56 @@ void main() {
       final buffer = SerialLineBuffer(maxLineLength: 64);
 
       for (var i = 0; i < 1000; i++) {
-        expect(buffer.add(bytes('1234567890')), isEmpty);
+        buffer.add(bytes('1234567890'));
         expect(buffer.pendingLength, lessThanOrEqualTo(64));
       }
+    });
+
+    test('줄 끝을 한 번도 받지 못한 채 상한을 넘으면, 줄 끝을 안 보내는 기기로 보고 예전처럼 덩어리마다 읽는다', () {
+      var switched = 0;
+      final buffer =
+          SerialLineBuffer(maxLineLength: 16, onChunkMode: () => switched++);
+
+      expect(buffer.add(bytes('1,2,3,4,5,6,7,8')), isEmpty);
+      expect(
+          buffer.add(bytes('1,2,3,4,5,6,7,8')), isEmpty); // 상한을 넘은 이 덩어리는 버린다
+      expect(buffer.add(bytes('9,9,9,9,9,9,9,9')), ['9,9,9,9,9,9,9,9']);
+      expect(buffer.add(bytes('1,1,1,1,1,1,1,1')), ['1,1,1,1,1,1,1,1']);
+      expect(switched, 1);
+      expect(buffer.pendingLength, 0);
+    });
+
+    test('줄 끝을 한 번이라도 받은 기기는 상한을 넘어도 덩어리마다 읽기로 바꾸지 않는다', () {
+      var switched = 0;
+      final buffer =
+          SerialLineBuffer(maxLineLength: 16, onChunkMode: () => switched++);
+
+      expect(buffer.add(bytes('1,2\n')), ['1,2']);
+      expect(buffer.add(bytes('12345678901234567890')), isEmpty);
+      expect(buffer.add(bytes('3,4')), isEmpty); // 버린 줄의 꼬리
+      expect(buffer.add(bytes('\n5,6\n')), ['5,6']);
+      expect(switched, 0);
+    });
+
+    test('덩어리마다 읽다가 줄 끝이 오기 시작하면 다시 줄 단위로 모은다', () {
+      final buffer = SerialLineBuffer(maxLineLength: 16);
+      buffer.add(bytes('12345678901234567890')); // 덩어리마다 읽기로 바뀐다
+
+      // 처음 만난 줄 끝 앞은 반쪽일 수 있어 버리고, 그 뒤부터 줄 단위로 읽는다.
+      expect(buffer.add(bytes('1,2\n3,')), isEmpty);
+      expect(buffer.add(bytes('4\n')), ['3,4']);
+      expect(buffer.add(bytes('5,')), isEmpty);
+      expect(buffer.add(bytes('6\n')), ['5,6']);
+    });
+
+    test('clear()는 덩어리마다 읽던 상태도 풀어, 새 연결은 줄 단위로 시작한다', () {
+      final buffer = SerialLineBuffer(maxLineLength: 16);
+      buffer.add(bytes('12345678901234567890'));
+      expect(buffer.add(bytes('7,7')), ['7,7']);
+
+      buffer.clear();
+      expect(buffer.add(bytes('7,')), isEmpty);
+      expect(buffer.add(bytes('8\n')), ['7,8']);
     });
 
     test('기본 상한은 1024바이트다', () {
@@ -155,6 +202,17 @@ void main() {
           [9, 9, 9, 9, 9, 9, 9, 9],
         ],
       );
+    });
+
+    test('줄 끝을 안 보내는 기기여도, 상한을 넘긴 뒤부터는 예전처럼 덩어리마다 값을 읽는다', () {
+      final chunks = List.filled(80, '1,2,3,4,5,6,7,8'); // 덩어리 하나에 한 묶음, 줄 끝 없음
+      final readings = readingsFrom(chunks);
+
+      expect(readings, isNotEmpty);
+      expect(
+          readings
+              .every((r) => r.join(',') == '1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0'),
+          isTrue);
     });
 
     test('줄 끝 없이 상한을 넘은 쓰레기는 값으로 바꾸지 않는다', () {
