@@ -9,6 +9,8 @@ import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
 import 'package:hand_rehab_game/screens/game_list_screen.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../bluetooth/line_buffer.dart';
+import '../bluetooth/sensor_parser.dart';
 import '../utils/logger.dart';
 
 class BluetoothScreen extends StatefulWidget {
@@ -30,6 +32,10 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
   double pressure1 = 0.0, pressure2 = 0.0;
   final StreamController<List<double>> _bluetoothDataController =
       StreamController<List<double>>.broadcast();
+  final SerialLineBuffer _lineBuffer = SerialLineBuffer(
+    onOverflow: () => log.warning('Dropped data: no line ending within '
+        '${SerialLineBuffer.defaultMaxLineLength} bytes'),
+  );
 
   @override
   void initState() {
@@ -115,29 +121,18 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
       await BluetoothConnection.toAddress(device.address).then((connection) {
         log.info('Connected to the device');
         this.connection = connection;
+        // 새 연결은 이전 연결에서 남은 반쪽 줄 없이 시작한다.
+        _lineBuffer.clear();
 
         connection.input!.listen((Uint8List data) {
           String incomingData = String.fromCharCodes(data);
           log.info('Received data: $incomingData');
-          List<String> parsedNumbers = _parseNumbers(incomingData);
-
-          if (parsedNumbers.isNotEmpty && parsedNumbers.length >= 6) {
-            roll = double.tryParse(parsedNumbers[0]) ?? 0.0;
-            pitch = double.tryParse(parsedNumbers[1]) ?? 0.0;
-            yaw = double.tryParse(parsedNumbers[2]) ?? 0.0;
-            accx = double.tryParse(parsedNumbers[3]) ?? 0.0;
-            accy = double.tryParse(parsedNumbers[4]) ?? 0.0;
-            accz = double.tryParse(parsedNumbers[5]) ?? 0.0;
-            pressure1 = parsedNumbers.length > 6
-                ? double.tryParse(parsedNumbers[6]) ?? 0.0
-                : 0.0;
-            pressure2 = parsedNumbers.length > 7
-                ? double.tryParse(parsedNumbers[7]) ?? 0.0
-                : 0.0;
-            _bluetoothDataController.add(
-                [roll, pitch, yaw, accx, accy, accz, pressure1, pressure2]);
+          // 덩어리가 아니라 줄 끝까지 모인 줄 단위로 파싱한다.
+          for (final line in _lineBuffer.add(data)) {
+            _handleSensorLine(line);
           }
         }).onDone(() {
+          _lineBuffer.clear();
           log.info('Disconnected by remote request');
         });
 
@@ -183,9 +178,21 @@ class _BluetoothScreenState extends State<BluetoothScreen> {
     );
   }
 
-  List<String> _parseNumbers(String data) {
-    final RegExp regex = RegExp(r'([-+]?\d*\.\d+|[-+]?\d+)');
-    return regex.allMatches(data).map((m) => m.group(0)!).toList();
+  void _handleSensorLine(String line) {
+    final values = parseSensorLine(line);
+    if (values == null) {
+      log.warning('Dropped invalid line: $line');
+      return;
+    }
+    roll = values[0];
+    pitch = values[1];
+    yaw = values[2];
+    accx = values[3];
+    accy = values[4];
+    accz = values[5];
+    pressure1 = values[6];
+    pressure2 = values[7];
+    _bluetoothDataController.add(values);
   }
 
   @override
